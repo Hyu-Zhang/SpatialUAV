@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+.DS_Store
+
+predictions/
+results/
+eval_cache/
+
+# Default local dataset location from the README.
+/SpatialUAV/

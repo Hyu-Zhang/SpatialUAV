@@ -1,9 +1,8 @@
-# SpatialUAV
+# SpatialUAV: Benchmarking Spatial Intelligence for Low-Altitude UAV Perception, Collaboration, and Motion
 
-<!-- Replace placeholder links after the public release. -->
 [![Dataset](https://img.shields.io/badge/Dataset-Hugging%20Face-yellow)](<https://huggingface.co/datasets/Hyu-Zhang/SpatialUAV>)
-[![Paper](https://img.shields.io/badge/Paper-Coming%20Soon-blue)](<PAPER_URL>)
-[![License](https://img.shields.io/badge/License-TBD-lightgrey)](<LICENSE_URL>)
+[![Paper](https://img.shields.io/badge/arXiv-2606.27876-b31b1b.svg)](https://arxiv.org/abs/2606.27876)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 **SpatialUAV** is a benchmark for evaluating spatial intelligence in real
 low-altitude UAV scenarios. It covers perception, spatial relation reasoning,
@@ -37,13 +36,13 @@ record. Its construction pipeline combines detector-assisted regions, depth
 supervision, metadata-derived rules, manual annotation, blind filtering, and
 multi-round validation.
 
-| Group | Task Types | Main Capability |
-| --- | --- | --- |
-| Semantic Discrimination | Region Recognition, Anomaly Detection | Recognize queried objects and safety-critical regions |
-| Spatial Relation | Direction Recognition, Distance Comparison | Infer direction and relative depth from UAV views |
-| Aerial-Aerial Collaboration | Collaboration Recognition, Shared Association, Object Matching, Camera Transformation, Occlusion Removal | Match and reason across multiple UAV viewpoints |
-| Aerial-Ground Collaboration | Shared Association, Collaboration Recognition, View Translation, Path Planning | Align aerial and ground observations |
-| Motion Understanding | Global Motion | Describe UAV/camera motion over ordered frames |
+| Group | Instances | Task Types | Main Capability |
+| --- | ---: | --- | --- |
+| Semantic Discrimination | 599 | Region Recognition, Anomaly Detection | Recognize queried objects and safety-critical regions |
+| Spatial Relation | 716 | Direction Recognition, Distance Comparison | Infer direction and relative depth from UAV views |
+| Aerial-Aerial Collaboration | 1,231 | Collaboration Recognition, Shared Association, Object Matching, Camera Transformation, Occlusion Removal | Match and reason across multiple UAV viewpoints |
+| Aerial-Ground Collaboration | 785 | Shared Association, Collaboration Recognition, View Translation, Path Planning | Align aerial and ground observations |
+| Motion Understanding | 1,000 | Global Motion | Describe UAV/camera motion over ordered frames |
 
 <p align="center">
   <img src="assets/task_distribution.png" width="55%" alt="Task distribution">
@@ -59,19 +58,16 @@ The annotation file is JSONL. Each line is one benchmark instance:
 
 ```json
 {
-  "id": "A2A_Object_Matching_00001",
-  "image": [
-    "./SpatialUAV/samples_A2A_detected/example_view_1.jpg",
-    "./SpatialUAV/samples_A2A_detected/example_view_2.jpg"
-  ],
+  "id": "Region_Recognition_00001",
+  "image": ["./SpatialUAV/samples_Single_Image/img0001.jpg"],
   "conversations": [
     {
       "from": "human",
-      "value": "Which bounding box in image1 corresponds to Region 0 in image2?"
+      "value": "Which regions in the image contain a parking lot? Answer with only the region labels, formatted exactly like `Region 1, 2`. No explanation."
     }
   ],
   "source": "SpatialUAV",
-  "GT": "[100, 120, 240, 260]"
+  "GT": "Region 3, 4."
 }
 ```
 
@@ -82,8 +78,12 @@ SpatialUAV/
   annotations.jsonl
   annotations_subset_20pct_per_task.jsonl
   samples_Single_Image/
-  samples_A2A_*/
-  samples_A2G_*/
+  samples_A2A_Pured/
+  samples_A2A_detected/
+  samples_A2A_Occlusion_Removal/
+  samples_A2G_Pured/
+  samples_A2G_detected/
+  samples_A2G_Path_Planning/
   samples_Motion_Understanding_Frames/
 ```
 
@@ -92,11 +92,24 @@ Use `annotations_subset_20pct_per_task.jsonl` for quick checks and
 
 ## Installation
 
-Create an environment and install the common dependencies:
+Clone the code and install the common dependencies:
 
 ```bash
-pip install -U pillow openai google-genai anthropic
+git clone https://github.com/Hyu-Zhang/SpatialUAV.git
+cd SpatialUAV
+pip install -r requirements.txt
 ```
+
+Download the benchmark with Git LFS into the layout expected by the scripts:
+
+```bash
+git lfs install
+git clone https://huggingface.co/datasets/Hyu-Zhang/SpatialUAV SpatialUAV
+```
+
+The full image/frame archive is distributed through Hugging Face rather than
+stored in this GitHub repository. Do not commit the local `SpatialUAV/` data
+directory; it is excluded by `.gitignore`.
 
 Local model backends require their own model environments, for example
 `torch`, `transformers`, `accelerate`, `torchvision`, and `qwen-vl-utils`.
@@ -170,6 +183,11 @@ The evaluator uses task-specific metrics:
 | Path planning direction | exact direction accuracy |
 | Motion description | semantic judge or local token-F1 fallback |
 
+The paper's reported Global Motion score uses GPT-5.4-mini as the semantic
+judge. Configure the compatible endpoint through `AUTODL_API_KEY` and the
+`--motion-judge-*` arguments. The token-F1 mode below is an offline diagnostic
+fallback and does not reproduce the paper's semantic score.
+
 For environments without an external judge API, use the local fallback:
 
 ```bash
@@ -193,6 +211,19 @@ substantially harder.
 ## Paper
 
 **SpatialUAV: Benchmarking Spatial Intelligence for Low-Altitude UAV
-Perception, Collaboration, and Motion**
+Perception, Collaboration, and Motion** ([arXiv:2606.27876](https://arxiv.org/abs/2606.27876))
 
-Citation information will be updated after the paper release.
+```bibtex
+@article{zhang2026spatialuav,
+  title   = {SpatialUAV: Benchmarking Spatial Intelligence for Low-Altitude UAV Perception, Collaboration, and Motion},
+  author  = {Zhang, Haoyu and Liu, Meng and Xiang, Qianlong and Wang, Kun and Wang, Yaowei and Nie, Liqiang},
+  journal = {arXiv preprint arXiv:2606.27876},
+  year    = {2026}
+}
+```
+
+## License
+
+The code in this repository is released under the [MIT License](LICENSE).
+The benchmark data is derived from multiple source datasets and remains subject
+to the terms of those sources; the MIT License does not relicense the data.

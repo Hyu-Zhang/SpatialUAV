@@ -1,0 +1,40 @@
+cff-version: 1.2.0
+message: "If you use SpatialUAV, please cite the paper below."
+title: "SpatialUAV"
+type: software
+authors:
+  - family-names: Zhang
+    given-names: Haoyu
+  - family-names: Liu
+    given-names: Meng
+  - family-names: Xiang
+    given-names: Qianlong
+  - family-names: Wang
+    given-names: Kun
+  - family-names: Wang
+    given-names: Yaowei
+  - family-names: Nie
+    given-names: Liqiang
+repository-code: "https://github.com/Hyu-Zhang/SpatialUAV"
+url: "https://arxiv.org/abs/2606.27876"
+license: MIT
+date-released: 2026-06-26
+preferred-citation:
+  type: article
+  title: "SpatialUAV: Benchmarking Spatial Intelligence for Low-Altitude UAV Perception, Collaboration, and Motion"
+  authors:
+    - family-names: Zhang
+      given-names: Haoyu
+    - family-names: Liu
+      given-names: Meng
+    - family-names: Xiang
+      given-names: Qianlong
+    - family-names: Wang
+      given-names: Kun
+    - family-names: Wang
+      given-names: Yaowei
+    - family-names: Nie
+      given-names: Liqiang
+  year: 2026
+  doi: "10.48550/arXiv.2606.27876"
+  url: "https://arxiv.org/abs/2606.27876"

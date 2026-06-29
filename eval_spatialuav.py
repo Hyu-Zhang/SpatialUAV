@@ -829,7 +829,7 @@ def main():
     parser = argparse.ArgumentParser(description="Evaluate SpatialUAV predictions.")
     parser.add_argument(
         "--predictions",
-        default="./predictions/predictions_spatialuav_1.3.jsonl",
+        default="./predictions/predictions.jsonl",
         help="Prediction JSONL file path.",
     )
     parser.add_argument(

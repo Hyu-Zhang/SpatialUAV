@@ -1,0 +1,4 @@
+anthropic
+google-genai
+openai
+Pillow
