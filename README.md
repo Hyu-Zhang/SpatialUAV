@@ -162,22 +162,16 @@ python run_spatialuav_inference.py --backend autodl --provider openai --model <s
 
 ## Evaluation
 
-Set the API key for the GPT-5.4-mini semantic judge and evaluate predictions
-with the same metric configuration used in the paper:
+The evaluation consists of two parts. First, the 13 non-motion tasks are
+evaluated with deterministic, task-specific rules. Use a prediction file
+containing those tasks:
 
 ```bash
-export AUTODL_API_KEY=<your-api-key>
-
 python eval_spatialuav.py \
-  --predictions predictions/predictions_qwen.jsonl \
+  --predictions predictions/predictions_qwen_non_motion.jsonl \
   --annotations /path/to/SpatialUAV/annotations.jsonl \
-  --motion-judge-mode gpt_54_mini \
-  --motion-judge-provider openai \
-  --motion-judge-model gpt-5.4-mini \
-  --output-json results/summary_qwen.json
+  --output-json results/summary_qwen_non_motion.json
 ```
-
-The evaluator uses task-specific metrics:
 
 | Output Type | Evaluation |
 | --- | --- |
@@ -187,13 +181,41 @@ The evaluator uses task-specific metrics:
 | Bounding boxes | IoU and center-aware geometry score |
 | Camera transformation | angle and distance error thresholds |
 | Path planning direction | exact direction accuracy |
-| Motion description | GPT-5.4-mini semantic similarity judge |
 
-Global Motion predictions are scored for semantic similarity against the
-reference descriptions by GPT-5.4-mini, producing a normalized score in
-`[0, 1]`. Judge responses are cached in `eval_cache/` so interrupted evaluations
-can resume without rescoring completed samples. Use `--motion-judge-base-url`
-when evaluating through a different OpenAI-compatible endpoint.
+Second, Global Motion is evaluated with GPT-5.5-mini, which judges the semantic
+similarity between each prediction and its reference description and returns a
+normalized score in `[0, 1]`:
+
+```bash
+export AUTODL_API_KEY=<your-api-key>
+
+python eval_spatialuav.py \
+  --predictions predictions/predictions_qwen_motion.jsonl \
+  --annotations /path/to/SpatialUAV/annotations.jsonl \
+  --motion-judge-mode gpt_55_mini \
+  --motion-judge-provider openai \
+  --motion-judge-model gpt-5.5-mini \
+  --output-json results/summary_qwen_motion.json
+```
+
+Judge responses are cached in `eval_cache/` so interrupted evaluations can
+resume without rescoring completed samples. Use `--motion-judge-base-url` when
+evaluating through a different OpenAI-compatible endpoint.
+
+To evaluate all 14 tasks together in a single run, use the complete prediction
+file and enable the GPT-5.5-mini judge:
+
+```bash
+export AUTODL_API_KEY=<your-api-key>
+
+python eval_spatialuav.py \
+  --predictions predictions/predictions_qwen.jsonl \
+  --annotations /path/to/SpatialUAV/annotations.jsonl \
+  --motion-judge-mode gpt_55_mini \
+  --motion-judge-provider openai \
+  --motion-judge-model gpt-5.5-mini \
+  --output-json results/summary_qwen.json
+```
 
 ## Results
 

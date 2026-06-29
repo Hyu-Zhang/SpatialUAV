@@ -28,7 +28,8 @@ PARTIAL_REGION_TASKS = {
 }
 DEFAULT_OPENAI_MOTION_JUDGE_BASE_URL = "https://www.autodl.art/api/v1"
 DEFAULT_GEMINI_MOTION_JUDGE_BASE_URL = "https://www.autodl.art/api/v1/gemini"
-DEFAULT_MOTION_JUDGE_MODEL = "gpt-5.4-mini"
+DEFAULT_MOTION_JUDGE_MODEL = "gpt-5.5-mini"
+SEMANTIC_JUDGE_MODES = {"gpt_54_mini", "gpt_55_mini"}
 API_REFERENCE_PATH = Path("API.py")
 
 
@@ -455,10 +456,10 @@ class MotionJudge:
         self.retries = retries
         self.retry_delay = retry_delay
         self.fallback_on_error = fallback_on_error
-        self.cache = load_json(cache_path, {}) if mode == "gpt_54_mini" else {}
+        self.cache = load_json(cache_path, {}) if mode in SEMANTIC_JUDGE_MODES else {}
         self.client = None
         self.genai_types = None
-        if mode == "gpt_54_mini":
+        if mode in SEMANTIC_JUDGE_MODES:
             if provider == "openai":
                 OpenAI = import_openai()
                 self.client = OpenAI(base_url=base_url, api_key=api_key)
@@ -556,7 +557,7 @@ class MotionJudge:
         ) from last_error
 
     def _judge_once(self, system_prompt: str, user_prompt: str):
-        if self.mode == "gpt_54_mini":
+        if self.mode in SEMANTIC_JUDGE_MODES:
             if self.provider == "openai":
                 response = self.client.chat.completions.create(
                     model=self.model,
@@ -857,9 +858,9 @@ def main():
     )
     parser.add_argument(
         "--motion-judge-mode",
-        choices=["gpt_54_mini", "token_f1"],
-        default="gpt_54_mini",
-        help="How to score Motion_Understanding. Use gpt_54_mini for external API semantic judging, or token_f1 as fallback.",
+        choices=["gpt_55_mini", "gpt_54_mini", "token_f1"],
+        default="gpt_55_mini",
+        help="How to score Motion_Understanding. The benchmark setting uses gpt_55_mini for semantic judging.",
     )
     parser.add_argument(
         "--motion-judge-provider",
@@ -884,7 +885,7 @@ def main():
     )
     parser.add_argument(
         "--motion-judge-cache",
-        default="./eval_cache/motion_understanding_gpt54mini_scores.json",
+        default="./eval_cache/motion_understanding_gpt55mini_scores.json",
         help="Cache JSON file for motion-judge scores.",
     )
     parser.add_argument(
@@ -928,7 +929,7 @@ def main():
     )
     args = parser.parse_args()
 
-    if args.motion_judge_model == "token_f1" and args.motion_judge_mode == "gpt_54_mini":
+    if args.motion_judge_model == "token_f1" and args.motion_judge_mode in SEMANTIC_JUDGE_MODES:
         print(
             "Warning: --motion-judge-model token_f1 was interpreted as "
             "--motion-judge-mode token_f1. Use --motion-judge-mode token_f1 explicitly.",
@@ -936,27 +937,28 @@ def main():
         )
         args.motion_judge_mode = "token_f1"
 
-    api_defaults = load_api_reference_defaults(API_REFERENCE_PATH)
-    if args.motion_judge_provider == "auto":
-        args.motion_judge_provider = infer_motion_judge_provider(args.motion_judge_model)
-    args.motion_judge_base_url = resolve_motion_judge_base_url(
-        provider=args.motion_judge_provider,
-        base_url=args.motion_judge_base_url,
-        api_defaults=api_defaults,
-    )
-    if not args.motion_judge_api_key:
-        args.motion_judge_api_key = os.getenv("AUTODL_API_KEY", "") or api_defaults.get("api_key", "")
-    if args.motion_judge_mode == "gpt_54_mini" and not args.motion_judge_api_key:
-        raise SystemExit(
-            "Missing motion judge API key. Pass --motion-judge-api-key, set AUTODL_API_KEY, or configure API.py."
-        )
-
     rows = load_jsonl(Path(args.predictions))
     rows = attach_ground_truth(rows, Path(args.annotations))
     motion_total = sum(1 for row in rows if task_name_from_id(row["question_id"]) == "Motion_Understanding")
     motion_seen = 0
+    if motion_total and args.motion_judge_mode in SEMANTIC_JUDGE_MODES:
+        api_defaults = load_api_reference_defaults(API_REFERENCE_PATH)
+        if args.motion_judge_provider == "auto":
+            args.motion_judge_provider = infer_motion_judge_provider(args.motion_judge_model)
+        args.motion_judge_base_url = resolve_motion_judge_base_url(
+            provider=args.motion_judge_provider,
+            base_url=args.motion_judge_base_url,
+            api_defaults=api_defaults,
+        )
+        if not args.motion_judge_api_key:
+            args.motion_judge_api_key = os.getenv("AUTODL_API_KEY", "") or api_defaults.get("api_key", "")
+        if not args.motion_judge_api_key:
+            raise SystemExit(
+                "Missing motion judge API key. Pass --motion-judge-api-key, set AUTODL_API_KEY, or configure API.py."
+            )
+
     motion_judge = MotionJudge(
-        mode=args.motion_judge_mode,
+        mode=args.motion_judge_mode if motion_total else "token_f1",
         provider=args.motion_judge_provider,
         base_url=args.motion_judge_base_url,
         api_key=args.motion_judge_api_key,
