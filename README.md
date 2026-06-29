@@ -162,12 +162,18 @@ python run_spatialuav_inference.py --backend autodl --provider openai --model <s
 
 ## Evaluation
 
-Evaluate predictions with:
+Set the API key for the GPT-5.4-mini semantic judge and evaluate predictions
+with the same metric configuration used in the paper:
 
 ```bash
+export AUTODL_API_KEY=<your-api-key>
+
 python eval_spatialuav.py \
   --predictions predictions/predictions_qwen.jsonl \
   --annotations /path/to/SpatialUAV/annotations.jsonl \
+  --motion-judge-mode gpt_54_mini \
+  --motion-judge-provider openai \
+  --motion-judge-model gpt-5.4-mini \
   --output-json results/summary_qwen.json
 ```
 
@@ -181,21 +187,13 @@ The evaluator uses task-specific metrics:
 | Bounding boxes | IoU and center-aware geometry score |
 | Camera transformation | angle and distance error thresholds |
 | Path planning direction | exact direction accuracy |
-| Motion description | semantic judge or local token-F1 fallback |
+| Motion description | GPT-5.4-mini semantic similarity judge |
 
-The paper's reported Global Motion score uses GPT-5.4-mini as the semantic
-judge. Configure the compatible endpoint through `AUTODL_API_KEY` and the
-`--motion-judge-*` arguments. The token-F1 mode below is an offline diagnostic
-fallback and does not reproduce the paper's semantic score.
-
-For environments without an external judge API, use the local fallback:
-
-```bash
-python eval_spatialuav.py \
-  --predictions predictions/predictions_qwen.jsonl \
-  --annotations /path/to/SpatialUAV/annotations.jsonl \
-  --motion-judge-mode token_f1
-```
+Global Motion predictions are scored for semantic similarity against the
+reference descriptions by GPT-5.4-mini, producing a normalized score in
+`[0, 1]`. Judge responses are cached in `eval_cache/` so interrupted evaluations
+can resume without rescoring completed samples. Use `--motion-judge-base-url`
+when evaluating through a different OpenAI-compatible endpoint.
 
 ## Results
 
